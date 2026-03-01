@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Task AI – Chạy inference Tiny NN trên Yolo:Bit.
+Task AI Chạy inference Tiny NN trên Yolo:Bit.
 Đọc DHT20 (nhiệt độ, độ ẩm) → chạy predict() → in kết quả phân loại.
 Cần: model.py (đã export từ ai/export_model.py) và inference.py.
 """
@@ -44,7 +44,7 @@ def task_run():
         except Exception:
             temp, hum = 25.0, 55.0
     else:
-        # Không có DHT20: dùng giá trị giả thay đổi để demo
+        # Không có DHT20: dùng giá trị tự tạo thay đổi để demo
         temp = 20.0 + (_tick % 30)
         hum = 30.0 + (_tick % 50)
 

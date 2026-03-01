@@ -33,15 +33,15 @@ task_ntp.task_init()
 task_aiot.task_init()
 task_event.task_init()
 task_ai.task_init()
-# task_collect.task_init()  # Bỏ comment khi thu thập data
+# task_collect.task_init()  # Thu thập data (bỏ comment khi cần, và comment task_ai)
 
 # Đăng ký task_run() của từng task vào event_manager (timer event)
-event_manager.add_timer_event(config.INTERVAL_TASK1_MS, task1.task_run)
-event_manager.add_timer_event(config.INTERVAL_TASK2_MS, task2.task_run)
-event_manager.add_timer_event(config.INTERVAL_TASK_MQTT_MS, task_mqtt.task_run)
+# event_manager.add_timer_event(config.INTERVAL_TASK1_MS, task1.task_run)
+# event_manager.add_timer_event(config.INTERVAL_TASK2_MS, task2.task_run)
+# event_manager.add_timer_event(config.INTERVAL_TASK_MQTT_MS, task_mqtt.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_NTP_MS, task_ntp.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_AIOT_MS, task_aiot.task_run)
-event_manager.add_timer_event(config.INTERVAL_TASK_EVENT_MS, task_event.task_run)
+# event_manager.add_timer_event(config.INTERVAL_TASK_EVENT_MS, task_event.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_AI_MS, task_ai.task_run)
 # event_manager.add_timer_event(config.INTERVAL_TASK_COLLECT_MS, task_collect.task_run)  # Thu thập data
 

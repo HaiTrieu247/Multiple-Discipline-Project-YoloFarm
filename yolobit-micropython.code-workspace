@@ -3,6 +3,10 @@
     {
       "path": ".",
       "name": "Yolobit MicroPython"
+    },
+    {
+      "name": "serial://dev/tty.usbserial-110",
+      "uri": "serial://%2fdev%2ftty.usbserial-110/"
     }
   ],
   "settings": {
