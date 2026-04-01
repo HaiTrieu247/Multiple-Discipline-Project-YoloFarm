@@ -1,5 +1,11 @@
 ## Yolobit MicroPython (OhStem) – Template theo event_manager
 
+## Lab branches
+
+- `lab1`: LED blinky + RGB indicator.
+- `lab2`: GPIO + I2C peripherals (kế thừa từ `lab1`).
+- `lab3`: Semaphore + task communication (kế thừa từ `lab2`).
+
 Template này giúp bạn lập trình **Yolo:Bit (OhStem)** bằng **MicroPython** trên **VSCode** và nạp chương trình bằng extension **PyMakr**.
 
 - **Kiến trúc giống OhStem kéo thả**: dùng `event_manager.reset()`, `event_manager.add_timer_event(...)`, vòng lặp `event_manager.run()` + `time.sleep_ms(10)`.
