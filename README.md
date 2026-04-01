@@ -3,7 +3,7 @@
 ## Lab branches
 
 - `lab1`: LED blinky + RGB indicator.
-- `lab2`: GPIO + I2C peripherals (kế thừa từ `lab1`).
+- `lab2`: GPIO + I2C peripherals (kế thừa từ `lab1`), thêm `task_gpio.py`, `task_i2c.py`.
 - `lab3`: Semaphore + task communication (kế thừa từ `lab2`).
 
 Template này giúp bạn lập trình **Yolo:Bit (OhStem)** bằng **MicroPython** trên **VSCode** và nạp chương trình bằng extension **PyMakr**.
