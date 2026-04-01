@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Task 1: In "Xin chào!" ra serial mỗi chu kỳ.
-Mỗi task có 2 hàm: task_init() và task_run().
-task_run() được đăng ký vào event_manager.add_timer_event().
+Lab 1 - LED blinky.
+Nháy icon HEART/HEART_SMALL như nhịp tim để mô phỏng trạng thái LED.
 """
+
+from yolobit import *
 
 status = 0
 
@@ -15,5 +16,10 @@ def task_init():
 
 
 def task_run():
-    """Thực hiện task 1 mỗi lần được event_manager gọi (in ra serial)."""
-    print("Xin chào!")
+    """Nháy đèn bằng cách đổi icon hiển thị."""
+    global status
+    status = 1 - status
+    if status == 0:
+        display.show(Image.HEART)
+    else:
+        display.show(Image.HEART_SMALL)

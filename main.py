@@ -15,12 +15,9 @@ from event_manager import *
 import config
 import task1
 import task2
-import task_mqtt
-import task_ntp
-import task_aiot
-import task_event
-import task_ai
-# import task_collect  # Bỏ comment khi cần thu thập data (và comment task_ai)
+import task_gpio
+import task_i2c
+import task_lcd
 
 # Khởi tạo event manager
 event_manager.reset()
@@ -28,25 +25,19 @@ event_manager.reset()
 # Gọi task_init()
 task1.task_init()
 task2.task_init()
-task_mqtt.task_init()
-task_ntp.task_init()
-task_aiot.task_init()
-task_event.task_init()
-task_ai.task_init()
-# task_collect.task_init()  # Thu thập data (bỏ comment khi cần, và comment task_ai)
+task_gpio.task_init()
+task_i2c.task_init()
+task_lcd.task_init()
 
 # Đăng ký task_run() của từng task vào event_manager (timer event)
-# event_manager.add_timer_event(config.INTERVAL_TASK1_MS, task1.task_run)
-# event_manager.add_timer_event(config.INTERVAL_TASK2_MS, task2.task_run)
-# event_manager.add_timer_event(config.INTERVAL_TASK_MQTT_MS, task_mqtt.task_run)
-event_manager.add_timer_event(config.INTERVAL_TASK_NTP_MS, task_ntp.task_run)
-event_manager.add_timer_event(config.INTERVAL_TASK_AIOT_MS, task_aiot.task_run)
-# event_manager.add_timer_event(config.INTERVAL_TASK_EVENT_MS, task_event.task_run)
-event_manager.add_timer_event(config.INTERVAL_TASK_AI_MS, task_ai.task_run)
-# event_manager.add_timer_event(config.INTERVAL_TASK_COLLECT_MS, task_collect.task_run)  # Thu thập data
+event_manager.add_timer_event(config.INTERVAL_TASK1_MS, task1.task_run)
+event_manager.add_timer_event(config.INTERVAL_TASK2_MS, task2.task_run)
+event_manager.add_timer_event(config.INTERVAL_TASK_GPIO_MS, task_gpio.task_run)
+event_manager.add_timer_event(config.INTERVAL_TASK_I2C_MS, task_i2c.task_run)
+event_manager.add_timer_event(config.INTERVAL_TASK_LCD_MS, task_lcd.task_run)
 
 # In ra serial (Serial Monitor 115200)
-print("Yolobit event_manager - bat dau.")
+print("LAB2 - GPIO + I2C peripherals")
 
 while True:
     event_manager.run()
