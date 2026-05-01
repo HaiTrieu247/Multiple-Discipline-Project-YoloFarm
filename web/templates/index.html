@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YoLo Farm Dashboard</title>
+<meta name="description" content="Bảng điều khiển giám sát nông trại thông minh YoLo Farm – nhiệt độ, độ ẩm, ánh sáng, máy bơm.">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM
+   ═══════════════════════════════════════════ */
+:root {
+  --bg-primary:   #0f1117;
+  --bg-card:      #1a1d27;
+  --bg-card-alt:  #21242f;
+  --bg-glass:     rgba(255,255,255,0.04);
+  --border-glass: rgba(255,255,255,0.08);
+  --text-primary: #f0f2f5;
+  --text-muted:   #8b8fa3;
+  --accent-red:   #ff6b6b;
+  --accent-blue:  #4dabf7;
+  --accent-orange:#ffa94d;
+  --accent-green: #51cf66;
+  --accent-purple:#cc5de8;
+  --accent-cyan:  #22b8cf;
+  --gradient-red:    linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  --gradient-blue:   linear-gradient(135deg, #4dabf7 0%, #339af0 100%);
+  --gradient-orange: linear-gradient(135deg, #ffa94d 0%, #fd7e14 100%);
+  --gradient-green:  linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+  --gradient-purple: linear-gradient(135deg, #cc5de8 0%, #9c36b5 100%);
+  --gradient-cyan:   linear-gradient(135deg, #22b8cf 0%, #1098ad 100%);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-glow-red:    0 4px 30px rgba(255,107,107,0.25);
+  --shadow-glow-blue:   0 4px 30px rgba(77,171,247,0.25);
+  --shadow-glow-orange: 0 4px 30px rgba(255,169,77,0.25);
+  --shadow-glow-green:  0 4px 30px rgba(81,207,102,0.25);
+  --shadow-glow-purple: 0 4px 30px rgba(204,93,232,0.25);
+  --shadow-glow-cyan:   0 4px 30px rgba(34,184,207,0.25);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Subtle animated background ── */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(ellipse at 20% 50%, rgba(77,171,247,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(204,93,232,0.05) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(81,207,102,0.04) 0%, transparent 50%);
+  animation: bgShift 20s ease-in-out infinite alternate;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes bgShift {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(-5%, -3%); }
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════ */
+.dashboard {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.header-icon {
+  width: 48px; height: 48px;
+  background: var(--gradient-green);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: var(--shadow-glow-green);
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f0f2f5 0%, #8b8fa3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(81,207,102,0.5); }
+  50%      { opacity: 0.7; box-shadow: 0 0 0 6px rgba(81,207,102,0); }
+}
+
+/* ═══════════════════════════════════════════
+   SENSOR CARDS GRID
+   ═══════════════════════════════════════════ */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.sensor-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition), box-shadow var(--transition);
+  cursor: default;
+}
+
+.sensor-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Glow accent bar at top */
+.sensor-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.sensor-card.red::before    { background: var(--gradient-red); }
+.sensor-card.blue::before   { background: var(--gradient-blue); }
+.sensor-card.orange::before { background: var(--gradient-orange); }
+.sensor-card.green::before  { background: var(--gradient-green); }
+.sensor-card.purple::before { background: var(--gradient-purple); }
+.sensor-card.cyan::before   { background: var(--gradient-cyan); }
+
+.sensor-card.red:hover    { box-shadow: var(--shadow-glow-red); }
+.sensor-card.blue:hover   { box-shadow: var(--shadow-glow-blue); }
+.sensor-card.orange:hover { box-shadow: var(--shadow-glow-orange); }
+.sensor-card.green:hover  { box-shadow: var(--shadow-glow-green); }
+.sensor-card.purple:hover { box-shadow: var(--shadow-glow-purple); }
+.sensor-card.cyan:hover   { box-shadow: var(--shadow-glow-cyan); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.card-icon {
+  width: 38px; height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+.sensor-card.red .card-icon    { background: rgba(255,107,107,0.15); }
+.sensor-card.blue .card-icon   { background: rgba(77,171,247,0.15); }
+.sensor-card.orange .card-icon { background: rgba(255,169,77,0.15); }
+.sensor-card.green .card-icon  { background: rgba(81,207,102,0.15); }
+.sensor-card.purple .card-icon { background: rgba(204,93,232,0.15); }
+.sensor-card.cyan .card-icon   { background: rgba(34,184,207,0.15); }
+
+.card-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+}
+
+.card-value {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.sensor-card.red .card-value    { color: var(--accent-red); }
+.sensor-card.blue .card-value   { color: var(--accent-blue); }
+.sensor-card.orange .card-value { color: var(--accent-orange); }
+.sensor-card.green .card-value  { color: var(--accent-green); }
+.sensor-card.purple .card-value { color: var(--accent-purple); }
+.sensor-card.cyan .card-value   { color: var(--accent-cyan); }
+
+.card-unit {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.card-feed {
+  position: absolute;
+  top: 14px; right: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.5;
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════
+   CHARTS + CONTROLS SECTION
+   ═══════════════════════════════════════════ */
+.content-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 300px;
+  gap: 18px;
+}
+
+.chart-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: box-shadow var(--transition);
+}
+
+.chart-panel:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.chart-panel h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-panel h2 span {
+  font-size: 16px;
+}
+
+.chart-container {
+  position: relative;
+  height: 220px;
+}
+
+/* ── Controls column ── */
+.controls-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.control-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  text-align: center;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+
+.control-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.control-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+.control-card .control-feed {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.control-status {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 12px;
+  transition: color var(--transition);
+}
+
+.control-status.on  { color: var(--accent-green); }
+.control-status.off { color: var(--text-muted); }
+
+/* ── Toggle Switch ── */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 64px;
+  height: 34px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #2c2f3a;
+  border-radius: 34px;
+  transition: var(--transition);
+  border: 2px solid rgba(255,255,255,0.06);
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 26px; width: 26px;
+  left: 2px; bottom: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: var(--transition);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.toggle input:checked + .toggle-slider {
+  background: var(--accent-green);
+  border-color: rgba(81,207,102,0.3);
+  box-shadow: 0 0 20px rgba(81,207,102,0.3);
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(30px);
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .content-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .controls-col {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+  .control-card { flex: 1; }
+}
+
+@media (max-width: 700px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .content-row {
+    grid-template-columns: 1fr;
+  }
+  .controls-col {
+    flex-direction: column;
+  }
+  .header h1 { font-size: 22px; }
+  .card-value { font-size: 28px; }
+}
+
+/* ── Fade-in animation ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sensor-card, .chart-panel, .control-card {
+  animation: fadeUp 0.5s ease-out backwards;
+}
+
+.sensor-card:nth-child(1) { animation-delay: 0.05s; }
+.sensor-card:nth-child(2) { animation-delay: 0.10s; }
+.sensor-card:nth-child(3) { animation-delay: 0.15s; }
+.sensor-card:nth-child(4) { animation-delay: 0.20s; }
+.sensor-card:nth-child(5) { animation-delay: 0.25s; }
+.sensor-card:nth-child(6) { animation-delay: 0.30s; }
+
+.chart-panel { animation-delay: 0.35s; }
+.control-card:nth-child(1) { animation-delay: 0.40s; }
+.control-card:nth-child(2) { animation-delay: 0.45s; }
+</style>
+</head>
+
+<body>
+<div class="dashboard">
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="header" id="dashboard-header">
+    <div class="header-icon">🌱</div>
+    <h1>YoLo Farm Dashboard</h1>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span id="connection-status">Đang kết nối…</span>
+    </div>
+  </header>
+
+  <!-- ══════ SENSOR CARDS ══════ -->
+  <section class="cards-grid" id="sensor-cards">
+
+    <div class="sensor-card red" id="card-temp">
+      <span class="card-feed">V1</span>
+      <div class="card-header">
+        <div class="card-icon">🌡️</div>
+        <span class="card-label">Nhiệt độ</span>
+      </div>
+      <div class="card-value" id="val-temp">--</div>
+      <div class="card-unit">°C</div>
+    </div>
+
+    <div class="sensor-card blue" id="card-hum">
+      <span class="card-feed">V2</span>
+      <div class="card-header">
+        <div class="card-icon">💧</div>
+        <span class="card-label">Độ ẩm</span>
+      </div>
+      <div class="card-value" id="val-hum">--</div>
+      <div class="card-unit">%</div>
+    </div>
+
+    <div class="sensor-card cyan" id="card-soil">
+      <span class="card-feed">V3</span>
+      <div class="card-header">
+        <div class="card-icon">🌿</div>
+        <span class="card-label">Độ ẩm đất</span>
+      </div>
+      <div class="card-value" id="val-soil">--</div>
+      <div class="card-unit">%</div>
+    </div>
+
+    <div class="sensor-card orange" id="card-lux">
+      <span class="card-feed">V4</span>
+      <div class="card-header">
+        <div class="card-icon">☀️</div>
+        <span class="card-label">Ánh sáng</span>
+      </div>
+      <div class="card-value" id="val-lux">--</div>
+      <div class="card-unit">lux</div>
+    </div>
+
+    <div class="sensor-card green" id="card-gdd">
+      <span class="card-feed">V5</span>
+      <div class="card-header">
+        <div class="card-icon">📈</div>
+        <span class="card-label">GDD</span>
+      </div>
+      <div class="card-value" id="val-gdd">0</div>
+      <div class="card-unit">tích luỹ</div>
+    </div>
+
+    <div class="sensor-card purple" id="card-status">
+      <span class="card-feed">V6</span>
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <span class="card-label">Tình trạng</span>
+      </div>
+      <div class="card-value" id="val-status">---</div>
+      <div class="card-unit">đất trồng</div>
+    </div>
+
+  </section>
+
+  <!-- ══════ CHARTS + CONTROLS ══════ -->
+  <section class="content-row" id="charts-controls">
+
+    <div class="chart-panel" id="panel-lux-chart">
+      <h2><span>☀️</span> Lịch sử ánh sáng</h2>
+      <div class="chart-container">
+        <canvas id="luxChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-panel" id="panel-soil-chart">
+      <h2><span>🌿</span> Lịch sử độ ẩm đất</h2>
+      <div class="chart-container">
+        <canvas id="soilChart"></canvas>
+      </div>
+    </div>
+
+    <div class="controls-col">
+
+      <div class="control-card" id="control-pump1">
+        <h3>💧 Máy bơm 1</h3>
+        <div class="control-feed">Kênh V10</div>
+        <label class="toggle">
+          <input type="checkbox" id="pump1" onchange="toggleDevice('pump', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+        <div class="control-status off" id="pump1-status">TẮT</div>
+      </div>
+
+      <div class="control-card" id="control-pump2">
+        <h3>💡 Máy bơm 2</h3>
+        <div class="control-feed">Kênh V11</div>
+        <label class="toggle">
+          <input type="checkbox" id="pump2" onchange="toggleDevice('light', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+        <div class="control-status off" id="pump2-status">TẮT</div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════ -->
+<script>
+/* ── Chart.js global config ── */
+Chart.defaults.color = '#8b8fa3';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+/* ── Create Charts ── */
+function createGradient(ctx, r, g, b) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, `rgba(${r},${g},${b},0.35)`);
+  gradient.addColorStop(1, `rgba(${r},${g},${b},0.02)`);
+  return gradient;
+}
+
+const luxCtx = document.getElementById('luxChart').getContext('2d');
+const soilCtx = document.getElementById('soilChart').getContext('2d');
+
+const luxChart = new Chart(luxCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Ánh sáng (lux)',
+      data: [],
+      borderColor: '#ffa94d',
+      backgroundColor: createGradient(luxCtx, 255, 169, 77),
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#ffa94d',
+      pointBorderColor: '#1a1d27',
+      pointBorderWidth: 2,
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } }
+    },
+    interaction: { intersect: false, mode: 'index' },
+  }
+});
+
+const soilChart = new Chart(soilCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Độ ẩm đất (%)',
+      data: [],
+      borderColor: '#22b8cf',
+      backgroundColor: createGradient(soilCtx, 34, 184, 207),
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#22b8cf',
+      pointBorderColor: '#1a1d27',
+      pointBorderWidth: 2,
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } },
+           suggestedMin: 0, suggestedMax: 100 }
+    },
+    interaction: { intersect: false, mode: 'index' },
+  }
+});
+
+
+/* ── Load history on page load ── */
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history');
+    const data = await res.json();
+
+    if (data.lux && data.lux.length) {
+      luxChart.data.labels = data.lux.map(p => p.time);
+      luxChart.data.datasets[0].data = data.lux.map(p => p.value);
+      luxChart.update();
+    }
+    if (data.soil && data.soil.length) {
+      soilChart.data.labels = data.soil.map(p => p.time);
+      soilChart.data.datasets[0].data = data.soil.map(p => p.value);
+      soilChart.update();
+    }
+  } catch (e) {
+    console.warn('History load failed:', e);
+  }
+}
+
+loadHistory();
+
+
+/* ── Periodic state update ── */
+let firstUpdate = true;
+
+async function updateState() {
+  try {
+    const res = await fetch('/api/state');
+    const d = await res.json();
+
+    // Update card values
+    document.getElementById('val-temp').textContent = d.temp !== 0 ? d.temp.toFixed(1) : '--';
+    document.getElementById('val-hum').textContent  = d.humidity !== 0 ? d.humidity.toFixed(1) : '--';
+    document.getElementById('val-soil').textContent = d.soil !== 0 ? d.soil.toFixed(1) : '--';
+    document.getElementById('val-lux').textContent  = d.lux !== 0 ? Math.round(d.lux) : '--';
+    document.getElementById('val-gdd').textContent  = d.gdd;
+    document.getElementById('val-status').textContent = d.status || '---';
+
+    // Update toggle switches
+    document.getElementById('pump1').checked = d.pump;
+    document.getElementById('pump2').checked = d.light;
+
+    // Update status labels
+    const p1s = document.getElementById('pump1-status');
+    const p2s = document.getElementById('pump2-status');
+    p1s.textContent = d.pump ? 'BẬT' : 'TẮT';
+    p1s.className = 'control-status ' + (d.pump ? 'on' : 'off');
+    p2s.textContent = d.light ? 'BẬT' : 'TẮT';
+    p2s.className = 'control-status ' + (d.light ? 'on' : 'off');
+
+    // Append to chart (only if we have sensor data)
+    if (d.lux !== 0 || d.soil !== 0) {
+      const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      luxChart.data.labels.push(time);
+      luxChart.data.datasets[0].data.push(d.lux);
+      soilChart.data.labels.push(time);
+      soilChart.data.datasets[0].data.push(d.soil);
+
+      // Keep last 30 points
+      if (luxChart.data.labels.length > 30) {
+        luxChart.data.labels.shift();
+        luxChart.data.datasets[0].data.shift();
+      }
+      if (soilChart.data.labels.length > 30) {
+        soilChart.data.labels.shift();
+        soilChart.data.datasets[0].data.shift();
+      }
+
+      luxChart.update('none');   // 'none' disables animation for perf
+      soilChart.update('none');
+    }
+
+    // Connection status
+    if (firstUpdate) {
+      document.getElementById('connection-status').textContent = 'Đã kết nối';
+      firstUpdate = false;
+    }
+
+  } catch (e) {
+    document.getElementById('connection-status').textContent = 'Mất kết nối…';
+    console.error('Update failed:', e);
+  }
+}
+
+setInterval(updateState, 3000);
+updateState();
+
+
+/* ── Device toggle ── */
+async function toggleDevice(device, state) {
+  const value = state ? 1 : 0;
+  try {
+    await fetch(`/api/${device}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: value }),
+    });
+  } catch (e) {
+    console.error('Toggle failed:', e);
+    // Revert on failure
+    setTimeout(updateState, 500);
+  }
+}
+</script>
+
+</body>
+</html>
