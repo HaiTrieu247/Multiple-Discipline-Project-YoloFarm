@@ -9,4 +9,4 @@ pip install -r requirements.txt
 ### 3. Run
 python main.py
 
-*Turn on your browser and go for* [Google](http://127.0.0.1:5000/)
+*Turn on your browser and go for* http://127.0.0.1:5000/
