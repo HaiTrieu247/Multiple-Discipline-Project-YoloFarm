@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Lab 2 - I2C peripherals.
 Doc DHT20 qua I2C va scan dia chi thiet bi I2C.
@@ -61,6 +62,14 @@ def task_run():
             latest_hum = hum
             sensor_ok = True
             _read_err_count = 0
+            
+            # Cập nhật task_sensors với dữ liệu nhiệt độ & độ ẩm
+            try:
+                import task_sensors
+                task_sensors.set_temp_humidity(temp, hum)
+            except:
+                pass
+            
             print("[LAB2][I2C] Temp={:.1f}C Hum={:.1f}%".format(temp, hum))
         except Exception as err:
             dht = None

@@ -32,6 +32,8 @@ device_data = {
     "timestamp": 0,
     "temperature": None,
     "humidity": None,
+    "soil_moisture": None,
+    "light_level": None,
     "pump_state": 0,
     "pump_mode": "manual",
     "humidity_threshold": 50.0,
@@ -383,6 +385,25 @@ HTML_TEMPLATE = """
                 <div class="last-update" id="sensor-update"></div>
             </div>
             
+            <!-- Cảm biến Đất & Ánh sáng -->
+            <div class="card">
+                <h2>🌱 Cảm Biến Đất & Ánh Sáng</h2>
+                <div class="sensor-data">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Độ ẩm đất</div>
+                        <div class="sensor-value" id="sm-value">--%</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Ánh sáng</div>
+                        <div class="sensor-value" id="lux-value">--</div>
+                    </div>
+                </div>
+                <div class="info-text">
+                    📍 Pin1: Cảm biến độ ẩm | Pin2: Cảm biến ánh sáng
+                </div>
+                <div class="last-update" id="soil-light-update"></div>
+            </div>
+            
             <!-- Điều khiển Máy bơm -->
             <div class="card">
                 <h2>💧 Máy Bơm</h2>
@@ -483,6 +504,13 @@ HTML_TEMPLATE = """
                 
                 document.getElementById('temp-value').textContent = temp + '°C';
                 document.getElementById('humidity-value').textContent = humidity + '%';
+                
+                // Cập nhật cảm biến đất & ánh sáng
+                const sm = data.soil_moisture !== null ? data.soil_moisture.toFixed(0) : '--';
+                const lux = data.light_level !== null ? data.light_level.toFixed(0) : '--';
+                
+                document.getElementById('sm-value').textContent = sm + '%';
+                document.getElementById('lux-value').textContent = lux;
                 
                 // Cập nhật máy bơm
                 const pumpStatus = data.pump_state ? 'BẬT' : 'TẮT';

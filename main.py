@@ -13,6 +13,7 @@ import task_i2c
 import task_lcd
 import task_pump
 import task_webserver_client
+import task_sensors
 # Khởi tạo event manager
 event_manager.reset()
 
@@ -24,6 +25,7 @@ task_i2c.task_init()
 task_lcd.task_init()
 task_pump.task_init()
 task_webserver_client.task_init()
+task_sensors.task_init()
 
 # Đăng ký task_run() vào event_manager (timer event)
 event_manager.add_timer_event(config.INTERVAL_TASK1_MS, task1.task_run)
@@ -32,6 +34,7 @@ event_manager.add_timer_event(config.INTERVAL_TASK_GPIO_MS, task_gpio.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_I2C_MS, task_i2c.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_LCD_MS, task_lcd.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_PUMP_MS, task_pump.task_run)
+event_manager.add_timer_event(config.INTERVAL_TASK_SENSORS_MS, task_sensors.task_run)
 event_manager.add_timer_event(config.INTERVAL_TASK_WEBSERVER_CLIENT_MS, task_webserver_client.task_run)
 
 # ===== Cấu hình máy bơm =====

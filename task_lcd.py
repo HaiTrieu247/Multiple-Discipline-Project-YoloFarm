@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Lab 2 - LCD1602 over I2C.
 Tu dong thu 2 kieu thu vien pho bien tren firmware OhStem:
@@ -9,11 +10,12 @@ from time import ticks_ms
 from machine import SoftI2C, Pin
 from yolobit import pin19, pin20
 import task_i2c
+import task_sensors
 
 lcd = None
 _lcd_mode = ""
 _last_update = 0
-_line2_toggle = 0
+_display_mode = 0  # 0 = T/H, 1 = SM/LUX
 
 
 def _init_lcd():
@@ -61,9 +63,9 @@ def _init_lcd():
 
 
 def task_init():
-    global _last_update, _line2_toggle
+    global _last_update, _display_mode
     _last_update = 0
-    _line2_toggle = 0
+    _display_mode = 0
 
     if not _init_lcd():
         print("[LAB2][LCD] Khong khoi tao duoc LCD1602")
@@ -74,7 +76,7 @@ def task_init():
             lcd.backlight_on()
         lcd.clear()
         lcd.move_to(0, 0)
-        lcd.putstr("LAB2 LCD Ready")
+        lcd.putstr("YoloFarm Ready")
         lcd.move_to(0, 1)
         lcd.putstr(_lcd_mode[:16])
         print("[LAB2][LCD] ready via", _lcd_mode)
@@ -83,30 +85,38 @@ def task_init():
 
 
 def task_run():
-    global _last_update, _line2_toggle
+    global _last_update, _display_mode
     if not lcd:
         return
 
     now = ticks_ms()
-    if now - _last_update < 1000:
+    if now - _last_update < 2000:
         return
     _last_update = now
 
     try:
-        lcd.move_to(0, 0)
-        if task_i2c.latest_temp is not None and task_i2c.latest_hum is not None:
-            line1 = "T:{:.1f}C H:{:.1f}%".format(task_i2c.latest_temp, task_i2c.latest_hum)
-            lcd.putstr((line1 + " " * 16)[:16])
-        else:
-            lcd.putstr("DHT20 waiting... ")
-        lcd.move_to(0, 1)
-        if task_i2c.sensor_ok:
-            if _line2_toggle == 0:
-                lcd.putstr("Sensor OK        ")
+        # Xoay chiều giữa 2 chế độ hiển thị
+        _display_mode = 1 - _display_mode
+        
+        if _display_mode == 0:
+            # Hiển thị Nhiệt độ & Độ ẩm
+            lcd.move_to(0, 0)
+            if task_i2c.latest_temp is not None and task_i2c.latest_hum is not None:
+                line1 = "T:{:.1f}C H:{:.0f}%".format(task_i2c.latest_temp, task_i2c.latest_hum)
+                lcd.putstr((line1 + " " * 16)[:16])
             else:
-                lcd.putstr("I2C run {:>6}".format(now // 1000))
+                lcd.putstr("DHT20 waiting... ")
+            lcd.move_to(0, 1)
+            lcd.putstr("[Sensors]       ")
         else:
-            lcd.putstr("Check DHT wiring ")
-        _line2_toggle = 1 - _line2_toggle
+            # Hiển thị Độ ẩm đất & Ánh sáng
+            lcd.move_to(0, 0)
+            sm = task_sensors.get_soil_moisture()
+            lux = task_sensors.get_light_level()
+            line1 = "SM:{:.0f}% LUX:{}".format(sm, lux)
+            lcd.putstr((line1 + " " * 16)[:16])
+            lcd.move_to(0, 1)
+            lcd.putstr("[Soil & Light]  ")
+            
     except Exception as err:
         print("[LAB2][LCD] run error:", err)

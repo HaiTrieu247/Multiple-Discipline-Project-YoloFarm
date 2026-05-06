@@ -22,25 +22,25 @@ def task_init():
     try:
         import config
         SERVER_IP = getattr(config, 'WEBSERVER_IP', '192.168.1.100')
-        SERVER_URL = f"http://{SERVER_IP}:{SERVER_PORT}"
+        SERVER_URL = "http://{}:{}".format(SERVER_IP, SERVER_PORT)
         
         # Cố gắng kết nối WiFi nếu có cấu hình
         from lib.mqtt import mqtt
-        if getattr(config, 'WIFI_SSID', None):
+        if getattr(config, 'WIFI_SSID', None) and getattr(config, 'WIFI_PASSWORD', None):
             try:
                 mqtt.connect_wifi(config.WIFI_SSID, config.WIFI_PASSWORD)
                 if mqtt.wifi_connected():
                     wifi_connected = True
                     client_ok = True
-                    print(f"[WEBSERVER] WiFi connected, server: {SERVER_URL}")
+                    print("[WEBSERVER] WiFi connected, server: {}".format(SERVER_URL))
                 else:
                     print("[WEBSERVER] WiFi connection failed")
             except Exception as e:
-                print(f"[WEBSERVER] WiFi error: {e}")
+                print("[WEBSERVER] WiFi error: {}".format(e))
         else:
             print("[WEBSERVER] No WiFi config in config.py")
     except Exception as e:
-        print(f"[WEBSERVER] init error: {e}")
+        print("[WEBSERVER] init error: {}".format(e))
 
 
 def _collect_sensor_data():
@@ -52,6 +52,8 @@ def _collect_sensor_data():
         "timestamp": time.time(),
         "temperature": None,
         "humidity": None,
+        "soil_moisture": None,
+        "light_level": None,
         "pump_state": 0,
         "pump_mode": "manual",
     }
@@ -62,6 +64,14 @@ def _collect_sensor_data():
         if task_i2c.sensor_ok:
             data["temperature"] = task_i2c.latest_temp
             data["humidity"] = task_i2c.latest_hum
+    except:
+        pass
+    
+    try:
+        # Lấy dữ liệu từ task_sensors (SM, LUX)
+        import task_sensors
+        data["soil_moisture"] = task_sensors.get_soil_moisture()
+        data["light_level"] = task_sensors.get_light_level()
     except:
         pass
     
@@ -99,7 +109,7 @@ def _send_data_to_server(data):
         
         # Gửi POST
         response = urequests.post(
-            f"{SERVER_URL}/api/data",
+            "{}/api/data".format(SERVER_URL),
             data=json_data,
             headers={"Content-Type": "application/json"}
         )
@@ -108,11 +118,11 @@ def _send_data_to_server(data):
             response.close()
             return True
         else:
-            print(f"[WEBSERVER] POST failed: {response.status_code}")
+            print("[WEBSERVER] POST failed: {}".format(response.status_code))
             response.close()
             return False
     except Exception as e:
-        print(f"[WEBSERVER] send error: {e}")
+        print("[WEBSERVER] send error: {}".format(e))
         return False
 
 
@@ -136,7 +146,7 @@ def _fetch_command_from_server():
         
         # Lấy lệnh từ server
         response = urequests.get(
-            f"{SERVER_URL}/api/command",
+            "{}/api/command".format(SERVER_URL),
             timeout=5
         )
         
@@ -152,7 +162,7 @@ def _fetch_command_from_server():
             response.close()
             return None
     except Exception as e:
-        print(f"[WEBSERVER] fetch error: {e}")
+        print("[WEBSERVER] fetch error: {}".format(e))
         return None
 
 
@@ -177,21 +187,21 @@ def _execute_command(command):
             import task_pump
             mode = params.get("mode", "manual")
             task_pump.set_mode(mode)
-            print(f"[WEBSERVER] Executed: set_pump_mode({mode})")
+            print("[WEBSERVER] Executed: set_pump_mode({})".format(mode))
             return True
         
         elif cmd == "set_pump_state":
             import task_pump
             state = int(params.get("state", 0))
             task_pump.set_pump_manual(state)
-            print(f"[WEBSERVER] Executed: set_pump_state({state})")
+            print("[WEBSERVER] Executed: set_pump_state({})".format(state))
             return True
         
         elif cmd == "set_humidity_threshold":
             import task_pump
             threshold = float(params.get("threshold", 50.0))
             task_pump.set_humidity_threshold(threshold)
-            print(f"[WEBSERVER] Executed: set_humidity_threshold({threshold})")
+            print("[WEBSERVER] Executed: set_humidity_threshold({})".format(threshold))
             return True
         
         elif cmd == "set_schedule":
@@ -203,15 +213,15 @@ def _execute_command(command):
                 end_min=int(params.get("end_min", 0)),
                 duration_sec=int(params.get("duration_sec", 10))
             )
-            print(f"[WEBSERVER] Executed: set_schedule")
+            print("[WEBSERVER] Executed: set_schedule")
             return True
         
         else:
-            print(f"[WEBSERVER] Unknown command: {cmd}")
+            print("[WEBSERVER] Unknown command: {}".format(cmd))
             return False
     
     except Exception as e:
-        print(f"[WEBSERVER] execute error: {e}")
+        print("[WEBSERVER] execute error: {}".format(e))
         return False
 
 
