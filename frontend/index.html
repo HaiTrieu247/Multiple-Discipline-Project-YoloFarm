@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yolobit Dashboard - Điều khiển Máy Bơm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-bar span {
+            font-size: 0.9em;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .sensor-data {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .sensor-item {
+            text-align: center;
+        }
+        .sensor-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .sensor-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn-on {
+            background: #4caf50;
+        }
+        .btn-on:hover {
+            background: #45a049;
+        }
+        .btn-off {
+            background: #f44336;
+        }
+        .btn-off:hover {
+            background: #da190b;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .last-update {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚰 Yolobit Dashboard</h1>
+            <p>Điều khiển thiết bị từ xa</p>
+        </header>
+        <div class="status-bar">
+            <span>
+                <span class="status-indicator" id="wifi-status" style="background: #999;"></span>
+                WiFi: <span id="wifi-text">Đang kiểm tra...</span>
+            </span>
+            <span id="last-update">Cập nhật lần cuối: ---</span>
+        </div>
+        <div class="dashboard">
+            <div class="card">
+                <h2>📊 Cảm Biến (DHT20)</h2>
+                <div class="sensor-data">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Nhiệt độ</div>
+                        <div class="sensor-value" id="temp-value">--°C</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Độ ẩm</div>
+                        <div class="sensor-value" id="humidity-value">--%</div>
+                    </div>
+                </div>
+                <div class="info-text">📍 Đọc từ DHT20 qua I2C</div>
+                <div class="last-update" id="sensor-update"></div>
+            </div>
+            <div class="card">
+                <h2>🌱 Cảm Biến Đất & Ánh Sáng</h2>
+                <div class="sensor-data">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Độ ẩm đất</div>
+                        <div class="sensor-value" id="sm-value">--%</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Ánh sáng</div>
+                        <div class="sensor-value" id="lux-value">--</div>
+                    </div>
+                </div>
+                <div class="info-text">📍 Pin1: Cảm biến độ ẩm | Pin2: Cảm biến ánh sáng</div>
+                <div class="last-update" id="soil-light-update"></div>
+            </div>
+            <div class="card">
+                <h2>💧 Máy Bơm</h2>
+                <div class="control-group">
+                    <label>Trạng thái:</label>
+                    <div style="padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                        <span class="status-indicator" id="pump-status-indicator" style="background: #f44336;"></span>
+                        <span id="pump-status-text">TẮT</span>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn-on" onclick="sendCommand('set_pump_state', {state: 1})">Bật ✓</button>
+                    <button class="btn-off" onclick="sendCommand('set_pump_state', {state: 0})">Tắt ✗</button>
+                </div>
+                <div class="info-text" id="pump-info" style="margin-top: 10px;">Mode: <span id="pump-mode">manual</span></div>
+            </div>
+            <div class="card">
+                <h2>⚙️ Chế độ</h2>
+                <div class="control-group">
+                    <label>Chọn chế độ:</label>
+                    <select id="mode-select" onchange="changePumpMode()">
+                        <option value="manual">Manual (Thủ công)</option>
+                        <option value="auto">Auto (Theo độ ẩm)</option>
+                        <option value="scheduled">Scheduled (Hẹn giờ)</option>
+                    </select>
+                </div>
+                <div id="auto-mode" style="display: none;">
+                    <div class="control-group">
+                        <label>Ngưỡng độ ẩm (%):</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="range" id="threshold-slider" min="0" max="100" value="50" onchange="updateThresholdDisplay()">
+                            <input type="number" id="threshold-input" min="0" max="100" value="50" style="width: 60px;" onchange="syncThreshold()">
+                        </div>
+                        <button onclick="sendCommand('set_humidity_threshold', {threshold: parseFloat(document.getElementById('threshold-input').value)})">Áp dụng</button>
+                    </div>
+                </div>
+                <div id="scheduled-mode" style="display: none;">
+                    <div class="control-group">
+                        <label>Giờ bắt đầu:</label>
+                        <input type="number" id="start-hour" min="0" max="23" value="6" placeholder="Giờ">
+                        <input type="number" id="start-min" min="0" max="59" value="0" placeholder="Phút" style="margin-top: 5px;">
+                    </div>
+                    <div class="control-group">
+                        <label>Giờ kết thúc:</label>
+                        <input type="number" id="end-hour" min="0" max="23" value="22" placeholder="Giờ">
+                        <input type="number" id="end-min" min="0" max="59" value="0" placeholder="Phút" style="margin-top: 5px;">
+                    </div>
+                    <div class="control-group">
+                        <label>Thời gian chạy (giây):</label>
+                        <input type="number" id="duration-sec" min="1" max="3600" value="15" placeholder="Giây">
+                    </div>
+                    <button onclick="sendSchedule()">Áp dụng Lịch</button>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <p>✨ Yolobit + Webserver Dashboard | FastAPI + HTML5</p>
+        </footer>
+    </div>
+    <script>
+        const apiBase = 'http://localhost:5000';
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(`${apiBase}/api/status`);
+                const data = await response.json();
+                const temp = data.temperature !== null ? data.temperature.toFixed(1) : '--';
+                const humidity = data.humidity !== null ? data.humidity.toFixed(1) : '--';
+                document.getElementById('temp-value').textContent = temp + '°C';
+                document.getElementById('humidity-value').textContent = humidity + '%';
+                const sm = data.soil_moisture !== null ? data.soil_moisture.toFixed(0) : '--';
+                const lux = data.light_level !== null ? data.light_level.toFixed(0) : '--';
+                document.getElementById('sm-value').textContent = sm + '%';
+                document.getElementById('lux-value').textContent = lux;
+                const pumpStatus = data.pump_state ? 'BẬT' : 'TẮT';
+                const pumpColor = data.pump_state ? '#4caf50' : '#f44336';
+                document.getElementById('pump-status-text').textContent = pumpStatus;
+                document.getElementById('pump-status-indicator').style.background = pumpColor;
+                document.getElementById('pump-mode').textContent = data.pump_mode.toUpperCase();
+                document.getElementById('last-update').textContent = 'Cập nhật lần cuối: ' + new Date().toLocaleTimeString('vi-VN');
+                document.getElementById('wifi-status').style.background = '#4caf50';
+                document.getElementById('wifi-text').textContent = 'Kết nối';
+            } catch (error) {
+                console.error('Error updating dashboard:', error);
+                document.getElementById('wifi-status').style.background = '#f44336';
+                document.getElementById('wifi-text').textContent = 'Mất kết nối';
+            }
+        }
+
+        async function sendCommand(command, params) {
+            try {
+                const payload = { command, params };
+                await fetch(`${apiBase}/api/command`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function changePumpMode() {
+            const mode = document.getElementById('mode-select').value;
+            document.getElementById('auto-mode').style.display = mode === 'auto' ? 'block' : 'none';
+            document.getElementById('scheduled-mode').style.display = mode === 'scheduled' ? 'block' : 'none';
+            sendCommand('set_pump_mode', { mode });
+        }
+
+        function updateThresholdDisplay() {
+            const slider = document.getElementById('threshold-slider');
+            const input = document.getElementById('threshold-input');
+            input.value = slider.value;
+        }
+
+        function syncThreshold() {
+            const input = document.getElementById('threshold-input');
+            const slider = document.getElementById('threshold-slider');
+            slider.value = input.value;
+        }
+
+        function sendSchedule() {
+            const params = {
+                start_hour: parseInt(document.getElementById('start-hour').value),
+                start_min: parseInt(document.getElementById('start-min').value),
+                end_hour: parseInt(document.getElementById('end-hour').value),
+                end_min: parseInt(document.getElementById('end-min').value),
+                duration_sec: parseInt(document.getElementById('duration-sec').value),
+            };
+            sendCommand('set_schedule', params);
+        }
+
+        setInterval(updateDashboard, 1000);
+        updateDashboard();
+    </script>
+</body>
+</html>
