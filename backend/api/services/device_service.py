@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional
 
-from backend.api.repositories.memory_repository import MemoryDeviceRepository
-from backend.api.schemas.command import Command
-from backend.api.schemas.device import DeviceData
+from api.repositories.memory_repository import MemoryDeviceRepository
+from api.schemas.command import Command
+from api.schemas.device import DeviceData
 
 
 class DeviceService:

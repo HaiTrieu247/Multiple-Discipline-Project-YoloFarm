@@ -93,6 +93,46 @@ class DBManager:
         records = [dict(row) for row in rows]
         return records, total
 
+    def get_daily_history(self, days: int = 30) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    strftime('%Y-%m-%d', datetime(timestamp, 'unixepoch', 'localtime')) AS period,
+                    ROUND(AVG(temperature), 2)   AS temperature_avg,
+                    ROUND(AVG(humidity), 2)       AS humidity_avg,
+                    ROUND(AVG(soil_moisture), 2)  AS soil_moisture_avg,
+                    ROUND(AVG(light_level), 2)    AS light_level_avg,
+                    COUNT(*)                      AS record_count
+                FROM SensorHistory
+                WHERE timestamp >= strftime('%s', 'now') - (? * 86400)
+                GROUP BY period
+                ORDER BY period ASC
+                """,
+                (days,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_weekly_history(self, weeks: int = 12) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    strftime('%Y-W%W', datetime(timestamp, 'unixepoch', 'localtime')) AS period,
+                    ROUND(AVG(temperature), 2)   AS temperature_avg,
+                    ROUND(AVG(humidity), 2)       AS humidity_avg,
+                    ROUND(AVG(soil_moisture), 2)  AS soil_moisture_avg,
+                    ROUND(AVG(light_level), 2)    AS light_level_avg,
+                    COUNT(*)                      AS record_count
+                FROM SensorHistory
+                WHERE timestamp >= strftime('%s', 'now') - (? * 7 * 86400)
+                GROUP BY period
+                ORDER BY period ASC
+                """,
+                (weeks,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def delete_old_records(self, days: int = 30) -> int:
         """Xóa các bản ghi SensorHistory cũ hơn một số ngày cho trước."""
         cutoff = time.time() - days * 86400

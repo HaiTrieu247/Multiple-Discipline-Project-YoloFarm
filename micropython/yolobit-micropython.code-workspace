@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "Yolobit MicroPython"
+    },
+    {
+      "name": "serial://dev/tty.usbserial-110",
+      "uri": "serial://%2fdev%2ftty.usbserial-110/"
+    },
+    {
+      "name": "serial://dev/tty.usbmodem1234561",
+      "uri": "serial://%2fdev%2ftty.usbmodem1234561/"
+    },
+    {
+      "name": "serial:/COM4",
+      "uri": "serial://com4/"
+    }
+  ],
+  "settings": {
+    "pymakr.autoConnect": false,
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true
+    },
+    "liveServer.settings.multiRootWorkspaceName": "Yolobit MicroPython"
+  },
+  "extensions": {
+    "recommendations": [
+      "pycom.pymakr"
+    ],
+    "unwantedRecommendations": [
+      "pycom.pymakr-preview"
+    ]
+  }
+}

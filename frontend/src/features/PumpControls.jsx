@@ -23,7 +23,7 @@ export default function PumpControls({ status, onSendCommand }) {
       setMode(status.pump_mode || 'manual');
       setThreshold(status.humidity_threshold ?? 50);
     }
-  }, [status]);
+  }, [status?.pump_mode, status?.humidity_threshold]);
 
   const pumpStatus = useMemo(() => {
     if (!status) return { label: 'Đang tải...', color: 'bg-slate-200 text-slate-700' };

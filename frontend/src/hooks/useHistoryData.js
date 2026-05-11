@@ -24,8 +24,10 @@ export function useHistoryData() {
     };
 
     fetchHistory();
+    const interval = window.setInterval(fetchHistory, 30000);
     return () => {
       mounted = false;
+      window.clearInterval(interval);
     };
   }, []);
 

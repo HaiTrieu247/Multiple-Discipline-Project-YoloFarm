@@ -1,13 +1,15 @@
+import logging
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, Query
 
-from backend.api.schemas.command import Command
-from backend.api.schemas.device import DeviceData, DeviceStatus
-from backend.api.schemas.history import SensorHistoryRecord, SensorHistoryResponse
-from backend.api.services.device_service import DeviceService
-from backend.core.dependencies import get_device_service
+from api.schemas.command import Command
+from api.schemas.device import DeviceData, DeviceStatus
+from api.schemas.history import SensorHistoryRecord, SensorHistoryResponse
+from api.services.device_service import DeviceService
+from core.dependencies import get_device_service
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["device"])
 
 
@@ -16,6 +18,15 @@ def receive_device_data(
     device_data: DeviceData,
     service: DeviceService = Depends(get_device_service),
 ) -> Dict[str, str]:
+    logger.info(
+        "[POST /api/data] temp=%.1f hum=%.1f soil=%s lux=%s pump=%d mode=%s",
+        device_data.temperature or 0,
+        device_data.humidity or 0,
+        device_data.soil_moisture,
+        device_data.light_level,
+        device_data.pump_state,
+        device_data.pump_mode,
+    )
     service.save_device_data(device_data)
     return {"status": "ok"}
 

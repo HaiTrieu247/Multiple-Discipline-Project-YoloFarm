@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-from backend.api.repositories.memory_repository import MemoryDeviceRepository
-from backend.api.services.device_service import DeviceService
-from backend.db.db_manager import DBManager
+from api.repositories.memory_repository import MemoryDeviceRepository
+from api.services.device_service import DeviceService
+from db.db_manager import DBManager
 
 
 project_root = Path(__file__).resolve().parents[2]

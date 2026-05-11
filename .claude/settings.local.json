@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Start-Sleep -Seconds 4)",
+      "Bash(python test_backend.py)",
+      "Bash(python -c \"import uvicorn; print\\('uvicorn ok'\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")"
+    ]
+  }
+}

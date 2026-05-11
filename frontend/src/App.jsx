@@ -1,42 +1,51 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import RealtimeDashboard from './features/RealtimeDashboard';
 import PumpControls from './features/PumpControls';
 import HistoryCharts from './features/HistoryCharts';
+import AggregatedCharts from './features/AggregatedCharts';
 import { useDeviceData } from './hooks/useDeviceData';
 import { useHistoryData } from './hooks/useHistoryData';
+import { useAggregatedData } from './hooks/useAggregatedData';
 import { sendCommand } from './services/api';
 
 const tabs = [
   { path: '/', label: 'Thời gian thực' },
   { path: '/history', label: 'Lịch sử' },
+  { path: '/daily', label: 'Theo ngày' },
+  { path: '/weekly', label: 'Theo tuần' },
 ];
 
 export default function App() {
   const { status, loading, error, refetch } = useDeviceData();
   const { history, loading: historyLoading, error: historyError, refetch: refetchHistory } = useHistoryData();
+  const { data: dailyData, loading: dailyLoading, error: dailyError } = useAggregatedData('daily');
+  const { data: weeklyData, loading: weeklyLoading, error: weeklyError } = useAggregatedData('weekly');
+
+  // Optimistic overrides: applied immediately when a command is sent,
+  // cleared automatically once the real status from the board catches up.
+  const [optimistic, setOptimistic] = useState({});
 
   const handleCommand = async (command, params) => {
+    // Apply optimistic update so UI responds instantly
+    const patch = {};
+    if (command === 'set_pump_state') patch.pump_state = params.state;
+    if (command === 'set_pump_mode') patch.pump_mode = params.mode;
+    if (command === 'set_humidity_threshold') patch.humidity_threshold = params.threshold;
+    if (Object.keys(patch).length) setOptimistic(o => ({ ...o, ...patch }));
+
     try {
       await sendCommand(command, params);
       toast.success('Gửi lệnh thành công');
-      if (
-        command === 'set_pump_state' ||
-        command === 'set_pump_mode' ||
-        command === 'set_humidity_threshold' ||
-        command === 'set_schedule'
-      ) {
-        refetch();
-        refetchHistory();
-      }
     } catch (err) {
+      setOptimistic({});          // revert on failure
       toast.error('Gửi lệnh thất bại');
     }
   };
 
-  const statusCard = useMemo(
-    () => ({
+  const statusCard = useMemo(() => {
+    const base = {
       temperature: status?.temperature ?? null,
       humidity: status?.humidity ?? null,
       soil_moisture: status?.soil_moisture ?? null,
@@ -44,9 +53,14 @@ export default function App() {
       pump_state: status?.pump_state ?? 0,
       pump_mode: status?.pump_mode ?? 'manual',
       humidity_threshold: status?.humidity_threshold ?? 50,
-    }),
-    [status]
-  );
+      timestamp: status?.timestamp ?? null,
+    };
+    // Merge optimistic overrides; clear them once real status matches
+    const merged = { ...base, ...optimistic };
+    const allMatch = Object.entries(optimistic).every(([k, v]) => base[k] === v);
+    if (allMatch && Object.keys(optimistic).length) setOptimistic({});
+    return merged;
+  }, [status, optimistic]);
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -86,6 +100,8 @@ export default function App() {
             }
           />
           <Route path="/history" element={<HistoryCharts history={history} loading={historyLoading} error={historyError} />} />
+          <Route path="/daily" element={<AggregatedCharts data={dailyData} loading={dailyLoading} error={dailyError} granularity="daily" />} />
+          <Route path="/weekly" element={<AggregatedCharts data={weeklyData} loading={weeklyLoading} error={weeklyError} granularity="weekly" />} />
         </Routes>
       </div>
     </div>
