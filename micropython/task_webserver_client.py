@@ -111,7 +111,8 @@ def _send_data_to_server(data):
         response = urequests.post(
             "{}/api/data".format(SERVER_URL),
             data=json_data,
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
+            timeout=5
         )
         
         if response.status_code == 200:

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-WmiObject Win32_Process -Filter \"ProcessId=30224 OR ProcessId=21280\")",
+      "PowerShell(wmic process where \"ProcessId=30224 OR ProcessId=21280\" get ProcessId,CommandLine /format:list)",
+      "PowerShell(\\(Get-CimInstance Win32_Process -Filter \"ProcessId=30224\"\\).CommandLine; \\(Get-CimInstance Win32_Process -Filter \"ProcessId=21280\"\\).CommandLine)"
+    ]
+  }
+}

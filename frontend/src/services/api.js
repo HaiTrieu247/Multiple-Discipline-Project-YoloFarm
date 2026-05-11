@@ -29,3 +29,13 @@ export const sendCommand = async (command, params = {}) => {
   });
   return response.data;
 };
+
+export const getDailyHistory = async (days = 30) => {
+  const response = await client.get('/api/history/daily', { params: { days } });
+  return response.data;
+};
+
+export const getWeeklyHistory = async (weeks = 12) => {
+  const response = await client.get('/api/history/weekly', { params: { weeks } });
+  return response.data;
+};

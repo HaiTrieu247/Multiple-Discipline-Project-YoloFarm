@@ -3,6 +3,20 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class AggregatedRecord(BaseModel):
+    period: str = Field(..., description="Date (YYYY-MM-DD) or week (YYYY-Www)")
+    temperature_avg: Optional[float] = None
+    humidity_avg: Optional[float] = None
+    soil_moisture_avg: Optional[float] = None
+    light_level_avg: Optional[float] = None
+    record_count: int = 0
+
+
+class AggregatedHistoryResponse(BaseModel):
+    granularity: str
+    records: list[AggregatedRecord]
+
+
 class SensorHistoryRecord(BaseModel):
     id: int = Field(..., description="Record ID")
     timestamp: float = Field(..., description="Unix timestamp")

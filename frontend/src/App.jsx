@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import RealtimeDashboard from './features/RealtimeDashboard';
