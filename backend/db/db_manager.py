@@ -1,4 +1,5 @@
 import os
+import time
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict
@@ -70,3 +71,36 @@ class DBManager:
                 ),
             )
             conn.commit()
+
+    def get_sensor_history(self, limit: int = 100, offset: int = 0) -> tuple[list[Dict[str, Any]], int]:
+        """
+        Lấy lịch sử sensor với phân trang.
+        
+        Args:
+            limit: số record tối đa mỗi lần
+            offset: vị trí bắt đầu
+            
+        Returns:
+            (danh sách record, tổng số record)
+        """
+        with self._connect() as conn:
+            total = conn.execute("SELECT COUNT(*) as cnt FROM SensorHistory").fetchone()["cnt"]
+            rows = conn.execute(
+                "SELECT * FROM SensorHistory ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+            
+        records = [dict(row) for row in rows]
+        return records, total
+
+    def delete_old_records(self, days: int = 30) -> int:
+        """Xóa các bản ghi SensorHistory cũ hơn một số ngày cho trước."""
+        cutoff = time.time() - days * 86400
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "DELETE FROM SensorHistory WHERE timestamp < ?",
+                (cutoff,),
+            )
+            conn.commit()
+            return cursor.rowcount
+

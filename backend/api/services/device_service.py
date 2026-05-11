@@ -21,3 +21,6 @@ class DeviceService:
 
     def pop_pending_command(self) -> Optional[Dict[str, Any]]:
         return self._repository.pop_pending_command()
+
+    def get_sensor_history(self, limit: int = 100, offset: int = 0) -> tuple[list[Dict[str, Any]], int]:
+        return self._repository.get_sensor_history(limit, offset)

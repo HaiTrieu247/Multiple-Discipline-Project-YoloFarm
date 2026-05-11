@@ -33,3 +33,6 @@ class MemoryDeviceRepository:
         command = self._pending_command
         self._pending_command = None
         return command
+
+    def get_sensor_history(self, limit: int = 100, offset: int = 0) -> tuple[list[Dict[str, Any]], int]:
+        return self._db_manager.get_sensor_history(limit, offset)
