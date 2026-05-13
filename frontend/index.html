@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yolobit Dashboard - Điều khiển Máy Bơm</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚰 Yolobit Dashboard</h1>
+            <p>Điều khiển thiết bị từ xa</p>
+        </header>
+        
+        <div class="status-bar">
+            <span>
+                <span class="status-indicator" id="wifi-status" style="background: #999;"></span>
+                WiFi: <span id="wifi-text">Đang kiểm tra...</span>
+            </span>
+            <span id="last-update">Cập nhật lần cuối: ---</span>
+        </div>
+        
+        <div class="dashboard">
+            <!-- Cảm biến Nhiệt độ & Độ ẩm -->
+            <div class="card">
+                <h2>📊 Cảm Biến (DHT20)</h2>
+                <div class="sensor-data">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Nhiệt độ</div>
+                        <div class="sensor-value" id="temp-value">--°C</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Độ ẩm</div>
+                        <div class="sensor-value" id="humidity-value">--%</div>
+                    </div>
+                </div>
+                <div class="info-text">
+                    📍 Đọc từ DHT20 qua I2C
+                </div>
+                <div class="last-update" id="sensor-update"></div>
+            </div>
+            
+            <!-- Cảm biến Đất & Ánh sáng -->
+            <div class="card">
+                <h2>🌱 Cảm Biến Đất & Ánh Sáng</h2>
+                <div class="sensor-data">
+                    <div class="sensor-item">
+                        <div class="sensor-label">Độ ẩm đất</div>
+                        <div class="sensor-value" id="sm-value">--%</div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-label">Ánh sáng</div>
+                        <div class="sensor-value" id="lux-value">--</div>
+                    </div>
+                </div>
+                <div class="info-text">
+                    📍 Pin1: Cảm biến độ ẩm | Pin2: Cảm biến ánh sáng
+                </div>
+                <div class="last-update" id="soil-light-update"></div>
+            </div>
+            
+            <!-- Điều khiển Máy bơm -->
+            <div class="card">
+                <h2>💧 Máy Bơm</h2>
+                
+                <div class="control-group">
+                    <label>Trạng thái:</label>
+                    <div style="padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                        <span class="status-indicator" id="pump-status-indicator" style="background: #f44336;"></span>
+                        <span id="pump-status-text">TẮT</span>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-on" onclick="sendCommand('set_pump_state', {state: 1})">
+                        Bật ✓
+                    </button>
+                    <button class="btn-off" onclick="sendCommand('set_pump_state', {state: 0})">
+                        Tắt ✗
+                    </button>
+                </div>
+                
+                <div class="info-text" id="pump-info" style="margin-top: 10px;">
+                    Mode: <span id="pump-mode">manual</span>
+                </div>
+            </div>
+            
+            <!-- Chế độ hoạt động -->
+            <div class="card">
+                <h2>⚙️ Chế độ</h2>
+                
+                <div class="control-group">
+                    <label>Chọn chế độ:</label>
+                    <select id="mode-select" onchange="changePumpMode()">
+                        <option value="manual">Manual (Thủ công)</option>
+                        <option value="auto">Auto (Theo độ ẩm)</option>
+                        <option value="scheduled">Scheduled (Hẹn giờ)</option>
+                    </select>
+                </div>
+                
+                <!-- Auto mode -->
+                <div id="auto-mode" style="display: none;">
+                    <div class="control-group">
+                        <label>Ngưỡng độ ẩm (%):</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="range" id="threshold-slider" min="0" max="100" value="50" 
+                                   onchange="updateThresholdDisplay()">
+                            <input type="number" id="threshold-input" min="0" max="100" value="50" 
+                                   style="width: 60px;" onchange="syncThreshold()">
+                        </div>
+                        <button onclick="sendCommand('set_humidity_threshold', 
+                                {threshold: parseFloat(document.getElementById('threshold-input').value)})">
+                            Áp dụng
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Scheduled mode -->
+                <div id="scheduled-mode" style="display: none;">
+                    <div class="control-group">
+                        <label>Giờ bắt đầu:</label>
+                        <input type="number" id="start-hour" min="0" max="23" value="6" placeholder="Giờ">
+                        <input type="number" id="start-min" min="0" max="59" value="0" placeholder="Phút" style="margin-top: 5px;">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Giờ kết thúc:</label>
+                        <input type="number" id="end-hour" min="0" max="23" value="22" placeholder="Giờ">
+                        <input type="number" id="end-min" min="0" max="59" value="0" placeholder="Phút" style="margin-top: 5px;">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Thời gian chạy (giây):</label>
+                        <input type="number" id="duration-sec" min="1" max="3600" value="30" placeholder="Giây">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Chu kỳ lặp lại (phút):</label>
+                        <input type="number" id="interval-min" min="1" max="1440" value="60" placeholder="Phút">
+                        <div class="info-text">Bơm chạy mỗi N phút. VD: 60 = mỗi 1 tiếng</div>
+                    </div>
+                    
+                    <button onclick="sendSchedule()">Áp dụng Lịch</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>✨ Yolobit + Webserver Dashboard | Flask + HTML5</p>
+        </footer>
+    </div>
+    
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

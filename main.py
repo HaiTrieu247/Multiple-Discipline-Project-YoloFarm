@@ -14,6 +14,7 @@ import task_lcd
 import task_pump
 import task_webserver_client
 import task_sensors
+import task_ntp
 # Khởi tạo event manager
 event_manager.reset()
 
@@ -26,6 +27,7 @@ task_lcd.task_init()
 task_pump.task_init()
 task_webserver_client.task_init()
 task_sensors.task_init()
+task_ntp.task_init()
 
 # Đăng ký task_run() vào event_manager (timer event)
 event_manager.add_timer_event(config.INTERVAL_TASK1_MS, task1.task_run)

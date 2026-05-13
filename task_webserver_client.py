@@ -206,12 +206,14 @@ def _execute_command(command):
         
         elif cmd == "set_schedule":
             import task_pump
+            task_pump.set_mode("scheduled")  # Tự động chuyển sang scheduled mode
             task_pump.set_schedule(
                 start_hour=int(params.get("start_hour", 6)),
                 start_min=int(params.get("start_min", 0)),
                 end_hour=int(params.get("end_hour", 22)),
                 end_min=int(params.get("end_min", 0)),
-                duration_sec=int(params.get("duration_sec", 10))
+                duration_sec=int(params.get("duration_sec", 10)),
+                interval_sec=int(params.get("interval_sec", 3600))
             )
             print("[WEBSERVER] Executed: set_schedule")
             return True

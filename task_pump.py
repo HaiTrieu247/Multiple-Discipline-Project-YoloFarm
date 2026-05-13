@@ -39,20 +39,23 @@ schedule_start_min = 0
 schedule_end_hour = 22
 schedule_end_min = 0
 schedule_duration_sec = 10
+schedule_interval_sec = 3600  # Chu kỳ lặp lại (giây), mặc định 1 tiếng
 
 # Trạng thái scheduler
 _schedule_pump_running_at = None
+_schedule_last_off_at = None  # Thời điểm bơm tắt lần cuối (để tính interval)
 _last_button_a = 0
 
 
 def task_init():
     """Khởi tạo pin, biến trạng thái"""
-    global pump_state, mode, PUMP_PIN, _last_button_a, _schedule_pump_running_at
+    global pump_state, mode, PUMP_PIN, _last_button_a, _schedule_pump_running_at, _schedule_last_off_at
     
     pump_state = 0
     mode = "manual"
     _last_button_a = 0
     _schedule_pump_running_at = None
+    _schedule_last_off_at = None
     
     # Khởi tạo PUMP_PIN từ yolobit module
     try:
@@ -110,19 +113,25 @@ def set_humidity_threshold(threshold):
     print(f"[PUMP] Humidity threshold set to {humidity_threshold}%")
 
 
-def set_schedule(start_hour, start_min, end_hour, end_min, duration_sec):
+def set_schedule(start_hour, start_min, end_hour, end_min, duration_sec, interval_sec=3600):
     """
     Tùy chỉnh thời gian hẹn giờ.
+    interval_sec: khoảng cách giữa các lần bơm (giây). Mặc định 3600 = 1 tiếng.
     """
     global schedule_start_hour, schedule_start_min
-    global schedule_end_hour, schedule_end_min, schedule_duration_sec
+    global schedule_end_hour, schedule_end_min, schedule_duration_sec, schedule_interval_sec
+    global _schedule_pump_running_at, _schedule_last_off_at
     
     schedule_start_hour = start_hour
     schedule_start_min = start_min
     schedule_end_hour = end_hour
     schedule_end_min = end_min
     schedule_duration_sec = duration_sec
-    print(f"[PUMP] Schedule set: {start_hour:02d}:{start_min:02d} - {end_hour:02d}:{end_min:02d}, duration {duration_sec}s")
+    schedule_interval_sec = interval_sec
+    # Reset trạng thái để bơm chạy ngay lần đầu
+    _schedule_pump_running_at = None
+    _schedule_last_off_at = None
+    print(f"[PUMP] Schedule set: {start_hour:02d}:{start_min:02d} - {end_hour:02d}:{end_min:02d}, duration {duration_sec}s, interval {interval_sec}s")
 
 
 def _set_pump(state):
@@ -193,7 +202,7 @@ def task_run():
     """
     Chạy máy bơm theo chế độ.
     """
-    global pump_state, mode, _last_button_a, _schedule_pump_running_at
+    global pump_state, mode, _last_button_a, _schedule_pump_running_at, _schedule_last_off_at
     
     # === Kiểm tra Button A ===
     if _button_a_pressed():
@@ -219,20 +228,36 @@ def task_run():
     # === Mode SCHEDULED ===
     elif mode == "scheduled":
         in_window = _is_in_schedule_window()
+        now_ms = time.ticks_ms()
         
         if in_window:
-            if _schedule_pump_running_at is None:
-                _schedule_pump_running_at = time.ticks_ms()
-                _set_pump(1)
-                print(f"[PUMP] Scheduled: enter time window, ON")
-            else:
-                elapsed_ms = time.ticks_diff(time.ticks_ms(), _schedule_pump_running_at)
+            if _schedule_pump_running_at is not None:
+                # Đang bơm → kiểm tra hết duration chưa
+                elapsed_ms = time.ticks_diff(now_ms, _schedule_pump_running_at)
                 if elapsed_ms >= schedule_duration_sec * 1000:
                     _set_pump(0)
                     _schedule_pump_running_at = None
-                    print(f"[PUMP] Scheduled: duration {schedule_duration_sec}s reached, OFF")
+                    _schedule_last_off_at = now_ms
+                    print(f"[PUMP] Scheduled: duration {schedule_duration_sec}s reached, OFF. Next in {schedule_interval_sec}s")
+            else:
+                # Chưa bơm → kiểm tra đã đủ interval chưa
+                should_start = False
+                if _schedule_last_off_at is None:
+                    # Chưa từng chạy → bật ngay
+                    should_start = True
+                else:
+                    # Đã chạy trước đó → chờ đủ interval
+                    wait_ms = time.ticks_diff(now_ms, _schedule_last_off_at)
+                    if wait_ms >= schedule_interval_sec * 1000:
+                        should_start = True
+                
+                if should_start:
+                    _schedule_pump_running_at = now_ms
+                    _set_pump(1)
+                    print(f"[PUMP] Scheduled: ON (duration {schedule_duration_sec}s)")
         else:
             if pump_state == 1:
                 _set_pump(0)
-                _schedule_pump_running_at = None
-                print(f"[PUMP] Scheduled: exit time window, OFF")
+            _schedule_pump_running_at = None
+            _schedule_last_off_at = None
+            # Khi ra khỏi window, reset để lần vào window sau chạy ngay
